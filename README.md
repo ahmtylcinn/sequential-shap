@@ -16,7 +16,13 @@ The findings obtained from analyses—such as on an obesity dataset—indicate t
 
 ## Installation
 
-You can easily install the package via pip:
+This package intentionally does not auto-install external libraries to avoid altering your environment. Therefore, before installing this package, please ensure the following prerequisite libraries are installed:
+
+```bash
+pip install numpy pandas matplotlib scikit-learn shap
+```
+
+Afterward, you can install the Sequential SHAP package via pip:
 
 ```bash
 pip install sequential-shap-explainer
