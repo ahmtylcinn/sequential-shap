@@ -16,11 +16,13 @@ The findings obtained from analyses—such as on an obesity dataset—indicate t
 
 ## Installation
 
-You can install the required dependencies and use the package locally:
+You can easily install the package via pip:
 
 ```bash
-pip install numpy pandas matplotlib scikit-learn shap
+pip install sequential-shap-explainer
 ```
+
+> **Note:** The current version is optimized for tree-based models (Random Forest, XGBoost, LightGBM, etc.) and uses `shap.TreeExplainer` under the hood.
 
 ## Usage Example
 
