@@ -22,7 +22,7 @@ You can easily install the package via pip:
 pip install sequential-shap-explainer
 ```
 
-> **Note:** The current version is optimized for tree-based models (Random Forest, XGBoost, LightGBM, etc.) and uses `shap.TreeExplainer` under the hood.
+> **Note:** The current version is optimized for tree-based models (e.g. Random Forest) and uses `shap.TreeExplainer` under the hood.
 
 ## Usage Example
 
