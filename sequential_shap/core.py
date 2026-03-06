@@ -167,9 +167,9 @@ class SequentialSHAP:
         plt.barh(plot_df['Feature'], plot_df['Plot_Val'], color=colors)
         plt.axvline(0, color="black", linewidth=0.8)
         
-        plt.xlabel("SHAP Contributions (Stage 1 + Stage 2)")
+        plt.xlabel("Magnitude of the Shapley Value")
         plt.ylabel("Features")
-        plt.title("New SHAP Plot")
+        plt.title("Sequential SHAP Plot")
         
         from matplotlib.patches import Patch
         legend_elements = [
