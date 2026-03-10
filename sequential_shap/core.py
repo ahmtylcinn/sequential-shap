@@ -47,11 +47,16 @@ class SequentialSHAP:
         # Convert y_train to mapped integer values
         self.y_train = np.array([self.class_to_idx[y] if y in self.class_to_idx else y for y in y_train])
         
-        # The internal class order is now just the integer indices
         self.class_order = list(range(len(self.original_class_order)))
         
         self.feature_names = list(X_train.columns) if hasattr(X_train, 'columns') else [f"Feature {i}" for i in range(X_train.shape[1])]
         self.results_df = None
+        
+        # Standard SHAP attributes
+        self.std_explainer = None
+        self.std_observation = None
+        self.std_pred_raw = None
+        self.std_shap_values = None
 
     def _get_upper_shap_values(self, explainer, obs_array):
         """Extracts SHAP values only for the group labeled as 1 (Upper)"""
@@ -134,12 +139,21 @@ class SequentialSHAP:
             'Category': categories
         })
         
+        # --- STANDARD SHAP WATERFALL PREPARATION ---
+        try:
+            self.std_explainer = shap.TreeExplainer(self.base_model)
+            self.std_observation = observation
+            self.std_pred_raw = pred_class_raw
+            self.std_shap_values = self.std_explainer.shap_values(observation)
+        except Exception as e:
+            self.std_explainer = None
+            
         # Wrap the returned output in CustomDataFrame to attach prediction text
         ret_df = CustomDataFrame(self.results_df[['Feature', 'Category']])
         ret_df.predicted_class = self.predicted_class
         return ret_df
 
-    def plot(self):
+    def plot(self, show_classical=False):
         if self.results_df is None:
             print("Warning: No results to plot. The examined sample might be in a boundary class or computation has not been performed yet.")
             return
@@ -163,21 +177,106 @@ class SequentialSHAP:
                                        -plot_df['Total_SHAP'], 
                                        plot_df['Total_SHAP'])
         
-        plt.figure(figsize=(10, 8))
-        plt.barh(plot_df['Feature'], plot_df['Plot_Val'], color=colors)
-        plt.axvline(0, color="black", linewidth=0.8)
-        
-        plt.xlabel("Magnitude of the Shapley Value")
-        plt.ylabel("Features")
-        plt.title("Sequential SHAP Plot")
-        
-        from matplotlib.patches import Patch
-        legend_elements = [
-            Patch(facecolor='red', label='UPPER (Red)'),
-            Patch(facecolor='blue', label='LOWER (Blue)'),
-            Patch(facecolor='gray', label='AMBIGUOUS (Gray)')
-        ]
-        plt.legend(handles=legend_elements, loc='lower right')
-        
-        plt.tight_layout()
-        plt.show()
+        if show_classical:
+            fig = plt.figure(figsize=(18, 7))
+            from matplotlib.gridspec import GridSpec
+            gs = GridSpec(1, 2, width_ratios=[1, 1.5])
+            
+            # --- CLASSICAL SHAP WATERFALL PLOT ---
+            ax1 = plt.subplot(gs[0])
+            if getattr(self, 'std_explainer', None) is not None:
+                try:
+                    # Find the internal index of the predicted class to extract the correct SHAP values
+                    if hasattr(self.base_model, 'classes_'):
+                        model_classes = list(self.base_model.classes_)
+                        pred_idx = model_classes.index(self.std_pred_raw) if self.std_pred_raw in model_classes else self.std_pred_raw
+                    else:
+                        pred_idx = self.std_pred_raw
+                    
+                    sv = self.std_shap_values
+                    if sv is None:
+                        raise ValueError("Standard SHAP values were not computed.")
+                    
+                    # Extract the 1D values array for the predicted class
+                    if isinstance(sv, list):
+                        vals = sv[pred_idx]
+                    elif isinstance(sv, np.ndarray):
+                        if len(sv.shape) == 2:
+                            vals = sv[:, pred_idx]
+                        elif len(sv.shape) == 3:
+                            vals = sv[0, :, pred_idx]
+                        else:
+                            vals = sv
+                    else:
+                        vals = sv
+                    
+                    # Extract the baseline value for the predicted class
+                    if self.std_explainer is None:
+                        raise ValueError("Standard SHAP explainer is missing.")
+                    ev = self.std_explainer.expected_value
+                    
+                    # Some versions/models return a single expected_value, others return a list
+                    if isinstance(ev, (list, np.ndarray)) and isinstance(pred_idx, int) and pred_idx < len(ev):
+                        base_val = ev[pred_idx]
+                    else:
+                        base_val = ev
+                        
+                    explanation = shap.Explanation(
+                        values=vals, 
+                        base_values=base_val, 
+                        data=self.std_observation, 
+                        feature_names=self.feature_names
+                    )
+                    
+                    # shap.plots.waterfall handles plt.show() internally unless show=False is passed
+                    shap.plots.waterfall(explanation, max_display=14, show=False)
+                    plt.title("Classical SHAP Waterfall Plot", pad=15, fontsize=12)
+                    plt.xticks(fontsize=10)
+                    plt.yticks(fontsize=10)
+                    
+                except Exception as e:
+                    ax1.text(0.5, 0.5, f"Warning: Could not generate standard SHAP Waterfall plot. Details:\n{e}", ha='center', va='center', wrap=True)
+                    ax1.axis('off')
+
+            # --- SEQUENTIAL SHAP PLOT (RIGHT SIDE) ---
+            ax2 = plt.subplot(gs[1])
+            ax2.barh(plot_df['Feature'], plot_df['Plot_Val'], color=colors)
+            ax2.axvline(0, color="black", linewidth=0.8)
+            
+            ax2.set_xlabel("Magnitude of the Shapley Value", fontsize=10)
+            ax2.set_ylabel("Features", fontsize=10)
+            ax2.set_title("Sequential SHAP Plot", pad=15, fontsize=12)
+            ax2.tick_params(axis='both', which='major', labelsize=10)
+            
+            from matplotlib.patches import Patch
+            legend_elements = [
+                Patch(facecolor='red', label='UPPER (Red)'),
+                Patch(facecolor='blue', label='LOWER (Blue)'),
+                Patch(facecolor='gray', label='AMBIGUOUS (Gray)')
+            ]
+            ax2.legend(handles=legend_elements, loc='lower right', fontsize=10)
+            
+            # Adjust spacing so words don't overlap between the two plots
+            plt.subplots_adjust(wspace=1.2, bottom=0.15, right=0.95, left=0.08)
+            plt.show()
+            
+        else:
+            # --- DEFAULT: ONLY PRINT SEQUENTIAL SHAP PLOT ---
+            plt.figure(figsize=(10, 8))
+            plt.barh(plot_df['Feature'], plot_df['Plot_Val'], color=colors)
+            plt.axvline(0, color="black", linewidth=0.8)
+            
+            plt.xlabel("Magnitude of the Shapley Value")
+            plt.ylabel("Features")
+            plt.title("Sequential SHAP Plot")
+            
+            from matplotlib.patches import Patch
+            legend_elements = [
+                Patch(facecolor='red', label='UPPER (Red)'),
+                Patch(facecolor='blue', label='LOWER (Blue)'),
+                Patch(facecolor='gray', label='AMBIGUOUS (Gray)')
+            ]
+            plt.legend(handles=legend_elements, loc='lower right')
+            
+            plt.tight_layout()
+            plt.show()

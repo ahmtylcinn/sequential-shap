@@ -57,8 +57,11 @@ results_df = explainer.explain_by_index(index=42)
 # 3. View the summarized DataFrame
 print(results_df)
 
-# 4. Plot the Sequential SHAP chart
+# 4. Plot the Sequential SHAP chart (Default behavior)
 explainer.plot()
+
+# 5. Plot BOTH the Classical SHAP Waterfall and Sequential SHAP side-by-side
+# explainer.plot(show_classical=True)
 ```
 
 ## Technical Features
