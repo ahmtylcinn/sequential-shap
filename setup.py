@@ -8,7 +8,7 @@ with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name="sequential-shap-explainer",
-    version="0.1.2",
+    version="0.1.3",
     author="Ahmet Yalcin", 
     author_email="ahmtylcinn15@gmail.com", 
     description="An innovative approach to improve the interpretability of the SHAP method for sequential multi-class classification.", 

@@ -1,8 +1,8 @@
 # Sequential SHAP
 
-In this study, the limitations of the SHAP (Shapley Additive exPlanations) method have been examined within the scope of Explainable Artificial Intelligence (XAI), particularly regarding **sequential multi-class classification problems**. 
+The SHAP (Shapley Additive exPlanations) method has established itself as a powerful tool in Explainable Artificial Intelligence (XAI). However, its classical approach is often restricted to revealing only positive and negative contributions for a single class, which can limit interpretabilty in **sequential multi-class classification problems**.
 
-Stemming from the observation that the classical SHAP method is restricted to revealing only positive and negative contributions for a single class, a modified alternative approach is proposed to overcome these constraints. This novel method aims to elucidate the model's decision-making mechanism in a more granular manner by categorizing feature effects into distinct semantic groups.
+To overcome these constraints, **Sequential SHAP** proposes a modified alternative approach. This novel method elucidates the model's decision-making mechanism in a more granular manner by categorizing feature effects into distinct semantic groups.
 
 ## The Sequential Solution
 
@@ -21,6 +21,13 @@ This package intentionally does not auto-install external libraries to avoid alt
 ```bash
 pip install numpy pandas matplotlib scikit-learn shap
 ```
+
+The library has been developed and tested with the following package versions:
+- `pandas == 3.0.1`
+- `numpy == 2.4.2`
+- `matplotlib == 3.10.8`
+- `scikit-learn == 1.8.0`
+- `shap == 0.51.0`
 
 Afterward, you can install the Sequential SHAP package via pip:
 
